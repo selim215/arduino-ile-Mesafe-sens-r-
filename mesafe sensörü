@@ -1,0 +1,63 @@
+#include <HCSR04.h>
+
+// Ultrasonik sensör nesnesi (Trig: 13, Echo: 12)						
+UltraSonicDistanceSensor distanceSensor(13, 12);
+
+// Çıkış pinleri
+const int buzzerPin = 8;
+const int kirmiziLed = 7;
+const int yesilLed = 6;
+
+void setup() {
+  Serial.begin(9600);
+ 
+  // Çıkış pinlerinin ayarlanması
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(kirmiziLed, OUTPUT);
+  pinMode(yesilLed, OUTPUT);
+
+  // Başlangıçta tüm çıkışları kapat
+  digitalWrite(buzzerPin, LOW);
+  digitalWrite(kirmiziLed, LOW);
+  digitalWrite(yesilLed, LOW);
+}
+
+void loop() {
+  									// Mesafeyi cm olarak ölç
+  									int mesafe = distanceSensor.measureDistanceCm();
+
+ 									 // Seri port ekranında durumu izle
+  									Serial.print("Guvenlik Mesafesi: ");
+  									Serial.print(mesafe);
+  									Serial.println(" cm");
+
+  									// 1. DURUM: Sensör menzil dışı veya 30 cm'den uzakta (GÜVENLİ)
+  									if (mesafe > 20 || mesafe <= 0) {
+    									digitalWrite(yesilLed, HIGH); // Güvenli ışığı açık
+    									digitalWrite(kirmiziLed, LOW);
+    									digitalWrite(buzzerPin, LOW);  // Sessiz
+    									delay(100);							}
+
+                      // 2. DURUM: 10 cm veya daha yakın (KRİTİK İHLAL)
+ else if (mesafe <= 10) {
+ digitalWrite(yesilLed, LOW);
+ digitalWrite(kirmiziLed, HIGH); // Alarm LED'i sürekli yanar
+ digitalWrite(buzzerPin, HIGH);  // Alarm sürekli öter
+ delay(50);
+  }
+// 3. DURUM: 10 cm ile 30 cm arası (YAKLAŞMA UYARISI)
+ else {
+ digitalWrite(yesilLed, LOW);
+// Mesafe 30'dan 10'a düştükçe bekleme süresi 400 ms'den 60 ms'ye kısalır
+ int gecikme = map(mesafe, 10, 30, 60, 400);
+
+// Kırmızı LED ve Buzzer senkronize yanıp söner
+ digitalWrite(kirmiziLed, HIGH);
+ digitalWrite(buzzerPin, HIGH);
+ delay(40); // Kısa uyarı darbesi
+
+ digitalWrite(kirmiziLed, LOW);
+ digitalWrite(buzzerPin, LOW);
+ delay(gecikme); // Mesafeye bağlı değişken bekleme
+  }
+}
